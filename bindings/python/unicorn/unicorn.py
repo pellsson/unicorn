@@ -200,6 +200,10 @@ UC_HOOK_INSN_OUT_CB = ctypes.CFUNCTYPE(
 UC_HOOK_INSN_SYSCALL_CB = ctypes.CFUNCTYPE(None, uc_engine, ctypes.c_void_p)
 UC_HOOK_INSN_SYS_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_void_p)
 UC_HOOK_INSN_CPUID_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_void_p)
+UC_HOOK_INSN_GEN_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_void_p)
+UC_HOOK_INSN_READ_CRN_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_uint32, ctypes.c_void_p)
+UC_HOOK_INSN_WRITE_CRN_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_uint32, ctypes.c_uint64, ctypes.c_void_p)
+
 UC_MMIO_READ_CB = ctypes.CFUNCTYPE(
     ctypes.c_uint64, uc_engine, ctypes.c_uint64, ctypes.c_int, ctypes.c_void_p
 )
@@ -715,6 +719,24 @@ class Uc(object):
         cb(self, data)
 
     @_catch_hook_exception
+    def _hook_insn_gen_cb(self, handle: int, user_data: int) -> int:
+        # call user's callback with self object
+        (cb, data) = self._callbacks[user_data]
+        return cb(self, data)
+
+    @_catch_hook_exception
+    def _hook_insn_read_crn_cb(self, handle: int, reg: int, user_data: int) -> int:
+        # call user's callback with self object
+        (cb, data) = self._callbacks[user_data]
+        return cb(self, reg, data)
+
+    @_catch_hook_exception
+    def _hook_insn_write_crn_cb(self, handle: int, reg: int, value: int, user_data: int) -> int:
+        # call user's callback with self object
+        (cb, data) = self._callbacks[user_data]
+        return cb(self, reg, value, data)
+
+    @_catch_hook_exception
     def _hook_insn_cpuid_cb(self, handle: int, user_data: int) -> int:
         # call user's callback with self object
         (cb, data) = self._callbacks[user_data]
@@ -819,13 +841,19 @@ class Uc(object):
             insn = ctypes.c_int(arg1)
             if arg1 == x86_const.UC_X86_INS_IN:  # IN instruction
                 cb = ctypes.cast(UC_HOOK_INSN_IN_CB(self._hook_insn_in_cb), UC_HOOK_INSN_IN_CB)
-            if arg1 == x86_const.UC_X86_INS_OUT:  # OUT instruction
+            elif arg1 == x86_const.UC_X86_INS_OUT:  # OUT instruction
                 cb = ctypes.cast(UC_HOOK_INSN_OUT_CB(self._hook_insn_out_cb), UC_HOOK_INSN_OUT_CB)
-            if arg1 in (x86_const.UC_X86_INS_SYSCALL, x86_const.UC_X86_INS_SYSENTER):  # SYSCALL/SYSENTER instruction
+            elif arg1 in (x86_const.UC_X86_INS_SYSCALL, x86_const.UC_X86_INS_SYSENTER):  # SYSCALL/SYSENTER instruction
                 cb = ctypes.cast(UC_HOOK_INSN_SYSCALL_CB(self._hook_insn_syscall_cb), UC_HOOK_INSN_SYSCALL_CB)
-            if arg1 == x86_const.UC_X86_INS_CPUID:  # CPUID instruction
+            elif arg1 == x86_const.UC_X86_INS_CPUID:  # CPUID instruction
                 cb = ctypes.cast(UC_HOOK_INSN_CPUID_CB(self._hook_insn_cpuid_cb), UC_HOOK_INSN_CPUID_CB)
-            if arg1 in (arm64_const.UC_ARM64_INS_MRS, arm64_const.UC_ARM64_INS_MSR, arm64_const.UC_ARM64_INS_SYS, arm64_const.UC_ARM64_INS_SYSL):
+            elif arg1 in (x86_const.UC_X86_INS_RDMSR, x86_const.UC_X86_INS_WRMSR):
+                cb = ctypes.cast(UC_HOOK_INSN_GEN_CB(self._hook_insn_gen_cb), UC_HOOK_INSN_GEN_CB)
+            elif arg1 == x86_const.UC_X86_INS_READ_CRn:
+                cb = ctypes.cast(UC_HOOK_INSN_READ_CRN_CB(self._hook_insn_read_crn_cb), UC_HOOK_INSN_READ_CRN_CB)
+            elif arg1 == x86_const.UC_X86_INS_WRITE_CRn:
+                cb = ctypes.cast(UC_HOOK_INSN_WRITE_CRN_CB(self._hook_insn_write_crn_cb), UC_HOOK_INSN_WRITE_CRN_CB)
+            elif arg1 in (arm64_const.UC_ARM64_INS_MRS, arm64_const.UC_ARM64_INS_MSR, arm64_const.UC_ARM64_INS_SYS, arm64_const.UC_ARM64_INS_SYSL):
                 cb = ctypes.cast(UC_HOOK_INSN_SYS_CB(self._hook_insn_sys_cb), UC_HOOK_INSN_SYS_CB)
             status = _uc.uc_hook_add(
                 self._uch, ctypes.byref(_h2), htype, cb,

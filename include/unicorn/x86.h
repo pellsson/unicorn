@@ -85,6 +85,26 @@ typedef void (*uc_cb_insn_syscall_t)(struct uc_struct *uc, void *user_data);
 //          indicates cpuid instruction will still be executed.
 typedef int (*uc_cb_insn_cpuid_t)(struct uc_struct *uc, void *user_data);
 
+// Callback function for tracing generic instructs (for uc_hook_intr())
+// @user_data: user data passed to tracing APIs.
+//
+// @return: true will execute the instruction, false will ignore it.
+typedef int (*uc_cb_insn_gen_t)(struct uc_struct *uc, void *user_data);
+
+// Callback function for tracing reads against control registers (for uc_hook_intr())
+// @reg: control register.
+// @user_data: user data passed to tracing APIs.
+//
+typedef void (*uc_cb_insn_read_crn_t)(struct uc_struct *uc, int reg, void *user_data);
+
+// Callback function for tracing writes against control registers (for uc_hook_intr())
+// @reg: control register.
+// @value: value to be written.
+// @user_data: user data passed to tracing APIs.
+//
+typedef void (*uc_cb_insn_write_crn_t)(struct uc_struct *uc, int reg, uint64_t value, void *user_data);
+
+
 //> X86 registers
 typedef enum uc_x86_reg {
     UC_X86_REG_INVALID = 0,
@@ -1670,6 +1690,9 @@ typedef enum uc_x86_insn {
     UC_X86_INS_XTEST,
     UC_X86_INS_FDISI8087_NOP,
     UC_X86_INS_FENI8087_NOP,
+
+    UC_X86_INS_READ_CRn,
+    UC_X86_INS_WRITE_CRn,
 
     UC_X86_INS_ENDING, // mark the end of the list of insn
 } uc_x86_insn;

@@ -1565,7 +1565,7 @@ uc_err uc_hook_add(uc_engine *uc, uc_hook *hh, int type, void *callback,
 {
     int ret = UC_ERR_OK;
     int i = 0;
-
+    
     UC_INIT(uc);
 
     struct hook *hook = calloc(1, sizeof(struct hook));
