@@ -153,8 +153,9 @@ target_ulong helper_read_crN(CPUX86State *env, int reg)
             continue;
         if (!HOOK_BOUND_CHECK(hook, env->eip))
             continue;
-        if (hook->insn == UC_X86_INS_READ_CRn)
+        if (hook->insn == UC_X86_INS_READ_CRn) {
             ((uc_cb_insn_read_crn_t)hook->callback)(env->uc, reg, hook->user_data);
+        }
         // the last callback may already asked to stop emulation
         if (env->uc->stop_request)
             break;
@@ -189,8 +190,9 @@ void helper_write_crN(CPUX86State *env, int reg, target_ulong t0)
             continue;
         if (!HOOK_BOUND_CHECK(hook, env->eip))
             continue;
-        if (hook->insn == UC_X86_INS_READ_CRn)
+        if (hook->insn == UC_X86_INS_WRITE_CRn) {
             ((uc_cb_insn_write_crn_t)hook->callback)(env->uc, reg, t0, hook->user_data);
+        }
         // the last callback may already asked to stop emulation
         if (env->uc->stop_request)
             break;
