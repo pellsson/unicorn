@@ -203,6 +203,8 @@ UC_HOOK_INSN_CPUID_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_vo
 UC_HOOK_INSN_GEN_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_void_p)
 UC_HOOK_INSN_READ_CRN_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_uint32, ctypes.c_void_p)
 UC_HOOK_INSN_WRITE_CRN_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_uint32, ctypes.c_uint64, ctypes.c_void_p)
+UC_HOOK_INSN_READ_DRN_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_uint32, ctypes.c_void_p)
+UC_HOOK_INSN_WRITE_DRN_CB = ctypes.CFUNCTYPE(ctypes.c_uint32, uc_engine, ctypes.c_uint32, ctypes.c_uint64, ctypes.c_void_p)
 
 UC_MMIO_READ_CB = ctypes.CFUNCTYPE(
     ctypes.c_uint64, uc_engine, ctypes.c_uint64, ctypes.c_int, ctypes.c_void_p
@@ -737,6 +739,18 @@ class Uc(object):
         return cb(self, reg, value, data)
 
     @_catch_hook_exception
+    def _hook_insn_read_drn_cb(self, handle: int, reg: int, user_data: int) -> int:
+        # call user's callback with self object
+        (cb, data) = self._callbacks[user_data]
+        return cb(self, reg, data)
+
+    @_catch_hook_exception
+    def _hook_insn_write_drn_cb(self, handle: int, reg: int, value: int, user_data: int) -> int:
+        # call user's callback with self object
+        (cb, data) = self._callbacks[user_data]
+        return cb(self, reg, value, data)
+
+    @_catch_hook_exception
     def _hook_insn_cpuid_cb(self, handle: int, user_data: int) -> int:
         # call user's callback with self object
         (cb, data) = self._callbacks[user_data]
@@ -853,6 +867,10 @@ class Uc(object):
                 cb = ctypes.cast(UC_HOOK_INSN_READ_CRN_CB(self._hook_insn_read_crn_cb), UC_HOOK_INSN_READ_CRN_CB)
             elif arg1 == x86_const.UC_X86_INS_WRITE_CRn:
                 cb = ctypes.cast(UC_HOOK_INSN_WRITE_CRN_CB(self._hook_insn_write_crn_cb), UC_HOOK_INSN_WRITE_CRN_CB)
+            elif arg1 == x86_const.UC_X86_INS_READ_DRn:
+                cb = ctypes.cast(UC_HOOK_INSN_READ_DRN_CB(self._hook_insn_read_drn_cb), UC_HOOK_INSN_READ_DRN_CB)
+            elif arg1 == x86_const.UC_X86_INS_WRITE_DRn:
+                cb = ctypes.cast(UC_HOOK_INSN_WRITE_DRN_CB(self._hook_insn_write_drn_cb), UC_HOOK_INSN_WRITE_DRN_CB)
             elif arg1 in (arm64_const.UC_ARM64_INS_MRS, arm64_const.UC_ARM64_INS_MSR, arm64_const.UC_ARM64_INS_SYS, arm64_const.UC_ARM64_INS_SYSL):
                 cb = ctypes.cast(UC_HOOK_INSN_SYS_CB(self._hook_insn_sys_cb), UC_HOOK_INSN_SYS_CB)
             status = _uc.uc_hook_add(

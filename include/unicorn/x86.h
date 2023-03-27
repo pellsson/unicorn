@@ -104,6 +104,8 @@ typedef void (*uc_cb_insn_read_crn_t)(struct uc_struct *uc, int reg, void *user_
 //
 typedef void (*uc_cb_insn_write_crn_t)(struct uc_struct *uc, int reg, uint64_t value, void *user_data);
 
+typedef uc_cb_insn_read_crn_t uc_cb_insn_read_drn_t;
+typedef uc_cb_insn_write_crn_t uc_cb_insn_write_drn_t;
 
 //> X86 registers
 typedef enum uc_x86_reg {
@@ -1693,6 +1695,9 @@ typedef enum uc_x86_insn {
 
     UC_X86_INS_READ_CRn,
     UC_X86_INS_WRITE_CRn,
+
+    UC_X86_INS_READ_DRn,
+    UC_X86_INS_WRITE_DRn,
 
     UC_X86_INS_ENDING, // mark the end of the list of insn
 } uc_x86_insn;

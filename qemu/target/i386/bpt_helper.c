@@ -249,6 +249,22 @@ void helper_rechecking_single_step(CPUX86State *env)
 
 void helper_set_dr(CPUX86State *env, int reg, target_ulong t0)
 {
+    struct hook *hook;
+
+    HOOK_FOREACH_VAR_DECLARE;
+    HOOK_FOREACH(env->uc, hook, UC_HOOK_INSN) {
+        if (hook->to_delete)
+            continue;
+        if (!HOOK_BOUND_CHECK(hook, env->eip))
+            continue;
+        if (hook->insn == UC_X86_INS_WRITE_DRn) {
+            ((uc_cb_insn_write_drn_t)hook->callback)(env->uc, reg, t0, hook->user_data);
+        }
+        // the last callback may already asked to stop emulation
+        if (env->uc->stop_request)
+            break;
+    }
+
     switch (reg) {
     case 0: case 1: case 2: case 3:
         if (hw_breakpoint_enabled(env->dr[7], reg)
@@ -282,6 +298,22 @@ void helper_set_dr(CPUX86State *env, int reg, target_ulong t0)
 
 target_ulong helper_get_dr(CPUX86State *env, int reg)
 {
+    struct hook *hook;
+
+    HOOK_FOREACH_VAR_DECLARE;
+    HOOK_FOREACH(env->uc, hook, UC_HOOK_INSN) {
+        if (hook->to_delete)
+            continue;
+        if (!HOOK_BOUND_CHECK(hook, env->eip))
+            continue;
+        if (hook->insn == UC_X86_INS_READ_DRn) {
+            ((uc_cb_insn_read_drn_t)hook->callback)(env->uc, reg, hook->user_data);
+        }
+        // the last callback may already asked to stop emulation
+        if (env->uc->stop_request)
+            break;
+    }
+
     switch (reg) {
     case 0: case 1: case 2: case 3: case 6: case 7:
         return env->dr[reg];
