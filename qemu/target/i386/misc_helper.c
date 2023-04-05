@@ -240,16 +240,37 @@ void helper_invlpg(CPUX86State *env, target_ulong addr)
 
 void helper_rdtsc(CPUX86State *env)
 {
-    uint64_t val;
+    int64_t val = -1;
+    struct hook *hook;
 
     if ((env->cr[4] & CR4_TSD_MASK) && ((env->hflags & HF_CPL_MASK) != 0)) {
         raise_exception_ra(env, EXCP0D_GPF, GETPC());
     }
     cpu_svm_check_intercept_param(env, SVM_EXIT_RDTSC, 0, GETPC());
 
-    val = cpu_get_tsc(env) + env->tsc_offset;
+   // Unicorn: call registered RDTSC hooks
+    HOOK_FOREACH_VAR_DECLARE;
+    HOOK_FOREACH(env->uc, hook, UC_HOOK_INSN) {
+        if (hook->to_delete)
+            continue;
+        if (!HOOK_BOUND_CHECK(hook, env->eip))
+            continue;
+        
+        // Multiple rdtsc callbacks returning different values is undefined.
+        if (hook->insn == UC_X86_INS_RDTSC) {
+            val = ((uc_cb_insn_gen_t)hook->callback)(env->uc, hook->user_data);
+        }
+
+        // the last callback may already asked to stop emulation
+        if (env->uc->stop_request)
+            break;
+    }
+
+    if(-1 == val) {
+        val = (int64_t)(cpu_get_tsc(env) + env->tsc_offset);
+    }
     env->regs[R_EAX] = (uint32_t)(val);
-    env->regs[R_EDX] = (uint32_t)(val >> 32);
+    env->regs[R_EDX] = (uint32_t)(((uint64_t)val) >> 32);
 }
 
 void helper_rdtscp(CPUX86State *env)

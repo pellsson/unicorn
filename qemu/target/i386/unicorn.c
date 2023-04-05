@@ -1610,7 +1610,7 @@ static bool x86_insn_hook_validate(uint32_t insn_enum)
         insn_enum != UC_X86_INS_CPUID && insn_enum != UC_X86_INS_RDMSR &&
         insn_enum != UC_X86_INS_WRMSR && insn_enum != UC_X86_INS_READ_CRn &&
         insn_enum != UC_X86_INS_WRITE_CRn && insn_enum != UC_X86_INS_READ_DRn &&
-        insn_enum != UC_X86_INS_WRITE_DRn) {
+        insn_enum != UC_X86_INS_WRITE_DRn && insn_enum != UC_X86_INS_RDTSC) {
         return false;
     }
     return true;

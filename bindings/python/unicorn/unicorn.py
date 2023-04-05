@@ -861,7 +861,7 @@ class Uc(object):
                 cb = ctypes.cast(UC_HOOK_INSN_SYSCALL_CB(self._hook_insn_syscall_cb), UC_HOOK_INSN_SYSCALL_CB)
             elif arg1 == x86_const.UC_X86_INS_CPUID:  # CPUID instruction
                 cb = ctypes.cast(UC_HOOK_INSN_CPUID_CB(self._hook_insn_cpuid_cb), UC_HOOK_INSN_CPUID_CB)
-            elif arg1 in (x86_const.UC_X86_INS_RDMSR, x86_const.UC_X86_INS_WRMSR):
+            elif arg1 in (x86_const.UC_X86_INS_RDMSR, x86_const.UC_X86_INS_WRMSR, x86_const.UC_X86_INS_RDTSC):
                 cb = ctypes.cast(UC_HOOK_INSN_GEN_CB(self._hook_insn_gen_cb), UC_HOOK_INSN_GEN_CB)
             elif arg1 == x86_const.UC_X86_INS_READ_CRn:
                 cb = ctypes.cast(UC_HOOK_INSN_READ_CRN_CB(self._hook_insn_read_crn_cb), UC_HOOK_INSN_READ_CRN_CB)
